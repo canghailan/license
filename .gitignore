@@ -1,0 +1,7 @@
+.idea/
+target/
+*.iml
+*.pem
+*.zip
+*.json
+*.dat
