@@ -1,7 +1,7 @@
 .idea/
 target/
 *.iml
-**/*.pem
-**/hardware.json
-**/license.yml
-**/license
+*.pem
+hardware.json
+license.yml
+license
