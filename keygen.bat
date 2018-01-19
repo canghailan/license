@@ -1,0 +1,1 @@
+java -jar target/license-1.0.0-jar-with-dependencies.jar keygen && pause

@@ -1,4 +1,4 @@
-package cc.whohow.license;
+package cc.whohow.license.command;
 
 import cc.whohow.license.util.IO;
 import cc.whohow.license.util.Pem;

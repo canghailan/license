@@ -1,5 +1,7 @@
 package cc.whohow.license;
 
+import cc.whohow.license.command.KeyGenerator;
+import org.junit.Assert;
 import org.junit.Test;
 
 public class TestKeyGenerator {
