@@ -45,20 +45,12 @@ public final class License {
         this.license = license;
     }
 
-    public Map<String, Object> getData() {
-        return parse().getBody();
-    }
-
     private static JsonNode parseJwt(String jwt) {
         try {
             return new ObjectMapper().readTree(Base64.getUrlDecoder().decode(jwt.split("\\.")[1]));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-    }
-
-    private static String formatDate(Date date) {
-        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
     }
 
     private static void validateCPU(Claims data, HardwareAbstractionLayer hardware) {
@@ -95,6 +87,48 @@ public final class License {
         throw new LicenseInvalidateException("hw-mac", expected, String.join(", ", actualList));
     }
 
+    private static void validateExpiration(Claims data) {
+        if (data.getExpiration() != null && data.getExpiration().before(new Date())) {
+            throw new LicenseInvalidateException("exp", "Expired");
+        }
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public void setKey(File key) {
+        setKey(IO.readAscii(key));
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public void setKey(URL key) {
+        setKey(IO.readAscii(key));
+    }
+
+    public String getLicense() {
+        return license;
+    }
+
+    public void setLicense(File license) {
+        setLicense(IO.readAscii(license));
+    }
+
+    public void setLicense(String license) {
+        this.license = license;
+    }
+
+    public void setLicense(URL license) {
+        setLicense(IO.readAscii(license));
+    }
+
+    public Map<String, Object> getData() {
+        return parse().getBody();
+    }
+
     private Jws<Claims> parse() {
         try {
             return Jwts.parser().setSigningKey(getPublicKey()).parseClaimsJws(license);
@@ -122,12 +156,6 @@ public final class License {
         validateCPU(data, hardware);
         validateMotherboard(data, hardware);
         validateMAC(data, hardware);
-    }
-
-    private static void validateExpiration(Claims data) {
-        if (data.getExpiration() != null && data.getExpiration().before(new Date())) {
-            throw new LicenseInvalidateException("exp", "Expired");
-        }
     }
 
     public void check() {
@@ -160,13 +188,14 @@ public final class License {
     @Override
     public String toString() {
         StringBuilder buffer = new StringBuilder();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         JsonNode body = parseJwt(license);
         Iterator<String> fieldNames = body.fieldNames();
         while (fieldNames.hasNext()) {
             String name = fieldNames.next();
             buffer.append(RESOURCE_BUNDLE.getString(name)).append(": ");
             if ("iat".equals(name) || "exp".equals(name)) {
-                buffer.append(formatDate(new Date(body.path(name).longValue())));
+                buffer.append(dateFormat.format(new Date(body.path(name).longValue())));
             } else {
                 buffer.append(body.path(name).asText());
             }
