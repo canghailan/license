@@ -8,7 +8,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
-import oshi.json.SystemInfo;
+import oshi.SystemInfo;
+import oshi.hardware.HardwareAbstractionLayer;
+import oshi.hardware.NetworkIF;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +27,6 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class License {
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle("license");
 
     private String key;
@@ -46,7 +47,7 @@ public final class License {
 
     private static JsonNode parseJwt(String jwt) {
         try {
-            return OBJECT_MAPPER.readTree(Base64.getUrlDecoder().decode(jwt.split("\\.")[1]));
+            return new ObjectMapper().readTree(Base64.getUrlDecoder().decode(jwt.split("\\.")[1]));
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -56,32 +57,32 @@ public final class License {
         return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(date);
     }
 
-    private static void validateCPU(Claims data, JsonNode hardware) {
+    private static void validateCPU(Claims data, HardwareAbstractionLayer hardware) {
         String expected = data.get("hw-cpu", String.class);
-        String actual = hardware.at("/processor/processorID").asText("");
+        String actual = hardware.getProcessor().getProcessorID();
         if (expected == null || expected.equals(actual)) {
             return;
         }
         throw new LicenseInvalidateException("hw-cpu", expected, actual);
     }
 
-    private static void validateMotherboard(Claims data, JsonNode hardware) {
+    private static void validateMotherboard(Claims data, HardwareAbstractionLayer hardware) {
         String expected = data.get("hw-mobo", String.class);
-        String actual = hardware.at("/computerSystem/baseboard/serialNumber").asText("");
+        String actual = hardware.getComputerSystem().getBaseboard().getSerialNumber();
         if (expected == null || expected.equals(actual)) {
             return;
         }
         throw new LicenseInvalidateException("hw-mobo", expected, actual);
     }
 
-    private static void validateMAC(Claims data, JsonNode hardware) {
+    private static void validateMAC(Claims data, HardwareAbstractionLayer hardware) {
         String expected = data.get("hw-mac", String.class);
         if (expected == null) {
             return;
         }
         List<String> actualList = new ArrayList<>();
-        for (JsonNode network : hardware.path("networks")) {
-            String actual = network.path("mac").asText("");
+        for (NetworkIF network : hardware.getNetworkIFs()) {
+            String actual = network.getMacaddr();
             if (expected.equals(actual)) {
                 return;
             }
@@ -108,17 +109,10 @@ public final class License {
         }
     }
 
-    public JsonNode getHardware() {
-        try {
-            return OBJECT_MAPPER.readTree(new SystemInfo().getHardware().toCompactJSON());
-        } catch (IOException e) {
-            throw new LicenseInvalidateException("GetHardwareError", e);
-        }
-    }
-
     public void validate() {
         Claims data = parse().getBody();
-        JsonNode hardware = getHardware();
+        SystemInfo systemInfo = new SystemInfo();
+        HardwareAbstractionLayer hardware = systemInfo.getHardware();
         validateCPU(data, hardware);
         validateMotherboard(data, hardware);
         validateMAC(data, hardware);
