@@ -19,10 +19,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class LicenseGenerator implements Runnable {
     private PrivateKey key;
-    private Map<String, String> data = new LinkedHashMap<>();
+    private Map<String, Object> data = new LinkedHashMap<>();
     private String output = "license";
 
     public PrivateKey getKey() {
@@ -49,19 +50,19 @@ public class LicenseGenerator implements Runnable {
         this.key = key;
     }
 
-    public Map<String, String> getData() {
+    public Map<String, Object> getData() {
         return data;
     }
 
-    public void setData(Map<String, String> data) {
+    public void setData(Map<String, Object> data) {
         this.data = data;
     }
 
-    public void addData(Map<String, String> data) {
+    public void addData(Map<String, ?> data) {
         this.data.putAll(data);
     }
 
-    public void addData(String key, String value) {
+    public void addData(String key, Object value) {
         this.data.put(key, value);
     }
 
@@ -77,17 +78,17 @@ public class LicenseGenerator implements Runnable {
     public void run() {
         JwtBuilder builder = Jwts.builder();
         builder.setIssuedAt(new Date());
-        for (Map.Entry<String, String> e: data.entrySet()) {
-            if (e.getValue() == null || e.getValue().trim().isEmpty()) {
+        for (Map.Entry<String, Object> e: data.entrySet()) {
+            if (e.getValue() == null || e.getValue().toString().trim().isEmpty()) {
                 continue;
             }
             switch (e.getKey()) {
                 case "iat": {
-                    builder.setIssuedAt(parseDate(e.getValue()));
+                    builder.setIssuedAt(parseDate(e.getValue().toString()));
                     break;
                 }
                 case "exp": {
-                    builder.setExpiration(parseDate(e.getValue()));
+                    builder.setExpiration(parseDate(e.getValue().toString()));
                     break;
                 }
                 default: {

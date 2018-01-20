@@ -45,6 +45,10 @@ public final class License {
         this.license = license;
     }
 
+    public Map<String, Object> getData() {
+        return parse().getBody();
+    }
+
     private static JsonNode parseJwt(String jwt) {
         try {
             return new ObjectMapper().readTree(Base64.getUrlDecoder().decode(jwt.split("\\.")[1]));
@@ -91,7 +95,7 @@ public final class License {
         throw new LicenseInvalidateException("hw-mac", expected, String.join(", ", actualList));
     }
 
-    public Jws<Claims> parse() {
+    private Jws<Claims> parse() {
         try {
             return Jwts.parser().setSigningKey(getPublicKey()).parseClaimsJws(license);
         } catch (ExpiredJwtException e) {
@@ -99,7 +103,7 @@ public final class License {
         }
     }
 
-    public PublicKey getPublicKey() {
+    private PublicKey getPublicKey() {
         try {
             return KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(new Pem(key).getData()));
         } catch (NoSuchAlgorithmException e) {
