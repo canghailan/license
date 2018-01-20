@@ -115,11 +115,19 @@ public final class License {
 
     public void validate() {
         Claims data = parse().getBody();
+        validateExpiration(data);
+
         SystemInfo systemInfo = new SystemInfo();
         HardwareAbstractionLayer hardware = systemInfo.getHardware();
         validateCPU(data, hardware);
         validateMotherboard(data, hardware);
         validateMAC(data, hardware);
+    }
+
+    private static void validateExpiration(Claims data) {
+        if (data.getExpiration() != null && data.getExpiration().before(new Date())) {
+            throw new LicenseInvalidateException("exp", "Expired");
+        }
     }
 
     public void check() {
